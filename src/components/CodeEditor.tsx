@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Play, Clock, Save, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Play, Clock, Save, AlertCircle, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ProblemStatement from './ProblemStatement';
 import TestResults from './TestResults';
+import AddQuestionForm from './AddQuestionForm';
 import { codeTemplates, sampleProblem } from '../utils/codeTemplates';
 import { executeCode } from '../utils/codeExecution';
 
@@ -25,6 +25,20 @@ interface SubmissionResult {
   suggestions: string;
 }
 
+interface Problem {
+  title: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  timeLimit: string;
+  memoryLimit: string;
+  description: string;
+  examples: Array<{
+    input: string;
+    output: string;
+    explanation?: string;
+  }>;
+  constraints: string[];
+}
+
 const CodeEditor: React.FC = () => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState<Language>('python');
@@ -34,16 +48,38 @@ const CodeEditor: React.FC = () => {
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [currentProblem, setCurrentProblem] = useState<Problem>(sampleProblem);
+  const [customProblems, setCustomProblems] = useState<Problem[]>([]);
   
   const editorRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
   const tabFocusRef = useRef(true);
 
+  // Load custom problems from localStorage on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('customProblems');
+    if (saved) {
+      try {
+        setCustomProblems(JSON.parse(saved));
+      } catch (error) {
+        console.error('Failed to load custom problems:', error);
+      }
+    }
+  }, []);
+
   // Initialize code template when language changes
   useEffect(() => {
     setCode(codeTemplates[language]);
   }, [language]);
+
+  // Reset submission state when problem changes
+  useEffect(() => {
+    setHasSubmitted(false);
+    setSubmissionResult(null);
+    setTimeLeft(30 * 60);
+  }, [currentProblem]);
 
   // Timer functionality
   useEffect(() => {
@@ -168,6 +204,41 @@ const CodeEditor: React.FC = () => {
     return 'text-red-600'; // < 1 minute
   };
 
+  const handleAddQuestion = (questionData: any) => {
+    const newProblem: Problem = {
+      ...questionData,
+      title: questionData.title,
+      difficulty: questionData.difficulty,
+      timeLimit: questionData.timeLimit,
+      memoryLimit: questionData.memoryLimit,
+      description: questionData.description,
+      examples: questionData.examples,
+      constraints: questionData.constraints
+    };
+
+    const updatedProblems = [...customProblems, newProblem];
+    setCustomProblems(updatedProblems);
+    localStorage.setItem('customProblems', JSON.stringify(updatedProblems));
+    
+    setCurrentProblem(newProblem);
+    setShowAddQuestion(false);
+  };
+
+  if (showAddQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto">
+          <AddQuestionForm
+            onQuestionAdded={handleAddQuestion}
+            onCancel={() => setShowAddQuestion(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const allProblems = [sampleProblem, ...customProblems];
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -197,10 +268,44 @@ const CodeEditor: React.FC = () => {
           </div>
         </div>
 
+        {/* Problem Selection and Add Question */}
+        <div className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium">Select Problem:</label>
+            <Select
+              value={currentProblem.title}
+              onValueChange={(title) => {
+                const problem = allProblems.find(p => p.title === title);
+                if (problem) setCurrentProblem(problem);
+              }}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {allProblems.map((problem, index) => (
+                  <SelectItem key={index} value={problem.title}>
+                    {problem.title} ({problem.difficulty})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button
+            onClick={() => setShowAddQuestion(true)}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Question</span>
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Problem Statement */}
           <div className="space-y-6">
-            <ProblemStatement problem={sampleProblem} />
+            <ProblemStatement problem={currentProblem} />
             {submissionResult && <TestResults result={submissionResult} />}
           </div>
 
