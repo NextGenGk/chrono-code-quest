@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, XCircle, Clock, Database, AlertCircle, Lightbulb } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Database, AlertCircle, Lightbulb, Zap, Brain } from 'lucide-react';
 
 interface SubmissionResult {
   status: 'success' | 'error';
@@ -13,6 +13,9 @@ interface SubmissionResult {
   failedTestCases: any[];
   errorMessage: string;
   suggestions: string;
+  timeComplexity?: string;
+  spaceComplexity?: string;
+  correctness?: number;
 }
 
 interface TestResultsProps {
@@ -24,17 +27,19 @@ const TestResults: React.FC<TestResultsProps> = ({ result }) => {
   const [passed, total] = result.testCasesPassed.split('/').map(Number);
   const passRate = total > 0 ? (passed / total) * 100 : 0;
 
+  const getCorrectnessColor = (score: number) => {
+    if (score >= 90) return 'text-green-600';
+    if (score >= 70) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center space-x-2">
-            {isSuccess ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            ) : (
-              <XCircle className="w-5 h-5 text-red-600" />
-            )}
-            <span>Submission Results</span>
+            <Brain className="w-5 h-5 text-purple-600" />
+            <span>AI Code Analysis</span>
           </CardTitle>
           <Badge variant={isSuccess ? "default" : "destructive"}>
             {isSuccess ? 'Accepted' : 'Failed'}
@@ -56,6 +61,42 @@ const TestResults: React.FC<TestResultsProps> = ({ result }) => {
             <span className="font-mono font-semibold">{result.memoryUsed}</span>
           </div>
         </div>
+
+        {/* Complexity Analysis */}
+        {(result.timeComplexity || result.spaceComplexity) && (
+          <>
+            <Separator />
+            <div className="grid grid-cols-2 gap-4">
+              {result.timeComplexity && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <Zap className="w-4 h-4 text-orange-600" />
+                  <span className="text-gray-600">Time Complexity:</span>
+                  <span className="font-mono font-semibold">{result.timeComplexity}</span>
+                </div>
+              )}
+              {result.spaceComplexity && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <Database className="w-4 h-4 text-green-600" />
+                  <span className="text-gray-600">Space Complexity:</span>
+                  <span className="font-mono font-semibold">{result.spaceComplexity}</span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Correctness Score */}
+        {result.correctness !== undefined && (
+          <>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">AI Correctness Score:</span>
+              <span className={`font-semibold text-lg ${getCorrectnessColor(result.correctness)}`}>
+                {result.correctness}%
+              </span>
+            </div>
+          </>
+        )}
 
         <Separator />
 
@@ -92,7 +133,7 @@ const TestResults: React.FC<TestResultsProps> = ({ result }) => {
             <div className="space-y-2">
               <h4 className="font-semibold flex items-center space-x-2 text-red-600">
                 <AlertCircle className="w-4 h-4" />
-                <span>Error Details</span>
+                <span>Analysis Results</span>
               </h4>
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <pre className="text-sm text-red-800 whitespace-pre-wrap font-mono">
@@ -138,14 +179,14 @@ const TestResults: React.FC<TestResultsProps> = ({ result }) => {
           </>
         )}
 
-        {/* Suggestions */}
+        {/* AI Suggestions */}
         {result.suggestions && (
           <>
             <Separator />
             <div className="space-y-2">
               <h4 className="font-semibold flex items-center space-x-2 text-blue-600">
                 <Lightbulb className="w-4 h-4" />
-                <span>Suggestions</span>
+                <span>AI Feedback & Suggestions</span>
               </h4>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">{result.suggestions}</p>
