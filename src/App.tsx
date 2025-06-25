@@ -3,18 +3,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
-import AuthPage from "./components/auth/AuthPage";
-import NotFound from "./pages/NotFound";
+import { useUser } from "@clerk/clerk-react";
+import { ClerkAuthProvider } from "@/contexts/ClerkContext";
+import CodeEditor from "./components/CodeEditor";
+import ClerkAuthPage from "./components/auth/ClerkAuthPage";
 
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
-  const { user, loading } = useAuth();
+  const { user, isSignedIn, isLoaded } = useUser();
 
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -22,18 +21,11 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (!user) {
-    return <AuthPage />;
+  if (!isSignedIn) {
+    return <ClerkAuthPage />;
   }
 
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <CodeEditor />;
 };
 
 const App = () => (
@@ -41,9 +33,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AuthProvider>
+      <ClerkAuthProvider>
         <AuthenticatedApp />
-      </AuthProvider>
+      </ClerkAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
