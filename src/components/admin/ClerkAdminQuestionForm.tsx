@@ -8,7 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Problem, Example } from '@/types/Problem';
+import { Problem } from '@/types/Problem';
+
+interface Example {
+  input: string;
+  output: string;
+  explanation?: string;
+}
 
 interface QuestionFormData {
   title: string;
@@ -149,7 +155,7 @@ const ClerkAdminQuestionForm: React.FC<ClerkAdminQuestionFormProps> = ({ onQuest
   };
 
   return (
-    <Card className="max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
+    <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl">Add New Question (Admin)</CardTitle>
