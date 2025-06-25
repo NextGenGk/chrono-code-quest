@@ -1,19 +1,20 @@
+'use client'
 
-import React from 'react';
-import { UserButton } from '@clerk/clerk-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Plus, Clock, Save } from 'lucide-react';
-import { useClerkAuth } from '@/contexts/ClerkContext';
+import React from 'react'
+import { UserButton } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { Plus, Clock, Save } from 'lucide-react'
+import { useClerkAuth } from '@/contexts/ClerkContext'
 
 interface ClerkHeaderProps {
-  timeLeft: number;
-  lastSaved: Date | null;
-  hasSubmitted: boolean;
-  onAddQuestion?: () => void;
-  autoSubmitEnabled?: boolean;
-  onToggleAutoSubmit?: () => void;
+  timeLeft: number
+  lastSaved: Date | null
+  hasSubmitted: boolean
+  onAddQuestion?: () => void
+  autoSubmitEnabled?: boolean
+  onToggleAutoSubmit?: () => void
 }
 
 const ClerkHeader: React.FC<ClerkHeaderProps> = ({
@@ -24,23 +25,23 @@ const ClerkHeader: React.FC<ClerkHeaderProps> = ({
   autoSubmitEnabled = true,
   onToggleAutoSubmit
 }) => {
-  const { user, isAdmin } = useClerkAuth();
+  const { user, isAdmin } = useClerkAuth()
 
   const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
   const formatLastSaved = (date: Date | null) => {
-    if (!date) return 'Never';
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return date.toLocaleTimeString();
-  };
+    if (!date) return 'Never'
+    const now = new Date()
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    return date.toLocaleTimeString()
+  }
 
   return (
     <header className="bg-white shadow-sm border-b">
@@ -109,7 +110,7 @@ const ClerkHeader: React.FC<ClerkHeaderProps> = ({
         </div>
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default ClerkHeader;
+export default ClerkHeader

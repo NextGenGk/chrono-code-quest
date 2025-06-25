@@ -1,8 +1,9 @@
+'use client'
 
-import React from 'react';
-import { SignIn, SignUp } from '@clerk/clerk-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from 'react'
+import { SignIn, SignUp } from '@clerk/nextjs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const ClerkAuthPage: React.FC = () => {
   return (
@@ -47,7 +48,7 @@ const ClerkAuthPage: React.FC = () => {
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default ClerkAuthPage;
+export default ClerkAuthPage
