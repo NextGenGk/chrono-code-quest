@@ -1,17 +1,21 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Play, Clock, Save, AlertCircle, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { Play, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import ProblemStatement from './ProblemStatement';
 import TestResults from './TestResults';
-import AddQuestionForm from './AddQuestionForm';
+import AdminQuestionForm from './admin/AdminQuestionForm';
+import Header from './layout/Header';
 import { codeTemplates, sampleProblem } from '../utils/codeTemplates';
 import { executeCode } from '../utils/codeExecution';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Language = 'python' | 'java' | 'cpp' | 'javascript';
 
@@ -26,6 +30,7 @@ interface SubmissionResult {
 }
 
 interface Problem {
+  id?: string;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   timeLimit: string;
@@ -40,34 +45,61 @@ interface Problem {
 }
 
 const CodeEditor: React.FC = () => {
+  const { isAdmin } = useAuth();
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState<Language>('python');
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
-  const [isRunning, setIsRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAddQuestion, setShowAddQuestion] = useState(false);
   const [currentProblem, setCurrentProblem] = useState<Problem>(sampleProblem);
-  const [customProblems, setCustomProblems] = useState<Problem[]>([]);
+  const [questions, setQuestions] = useState<Problem[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const editorRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
   const tabFocusRef = useRef(true);
 
-  // Load custom problems from localStorage on component mount
-  useEffect(() => {
-    const saved = localStorage.getItem('customProblems');
-    if (saved) {
-      try {
-        setCustomProblems(JSON.parse(saved));
-      } catch (error) {
-        console.error('Failed to load custom problems:', error);
-      }
+  // Load questions from database
+  const loadQuestions = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedQuestions = data?.map(q => ({
+        id: q.id,
+        title: q.title,
+        difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
+        timeLimit: q.time_limit,
+        memoryLimit: q.memory_limit,
+        description: q.description,
+        examples: Array.isArray(q.examples) ? q.examples : [],
+        constraints: Array.isArray(q.constraints) ? q.constraints : []
+      })) || [];
+
+      setQuestions(formattedQuestions);
+    } catch (error) {
+      console.error('Failed to load questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load questions from database.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions]);
 
   // Initialize code template when language changes
   useEffect(() => {
@@ -106,7 +138,7 @@ const CodeEditor: React.FC = () => {
     
     autoSaveRef.current = setTimeout(() => {
       handleAutoSave();
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => {
       if (autoSaveRef.current) {
@@ -192,43 +224,24 @@ const CodeEditor: React.FC = () => {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getTimerColor = () => {
-    if (timeLeft > 300) return 'text-green-600'; // > 5 minutes
-    if (timeLeft > 60) return 'text-yellow-600';  // > 1 minute
-    return 'text-red-600'; // < 1 minute
-  };
-
-  const handleAddQuestion = (questionData: any) => {
-    const newProblem: Problem = {
-      ...questionData,
-      title: questionData.title,
-      difficulty: questionData.difficulty,
-      timeLimit: questionData.timeLimit,
-      memoryLimit: questionData.memoryLimit,
-      description: questionData.description,
-      examples: questionData.examples,
-      constraints: questionData.constraints
-    };
-
-    const updatedProblems = [...customProblems, newProblem];
-    setCustomProblems(updatedProblems);
-    localStorage.setItem('customProblems', JSON.stringify(updatedProblems));
-    
-    setCurrentProblem(newProblem);
+  const handleAddQuestion = () => {
+    loadQuestions();
     setShowAddQuestion(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg">Loading questions...</div>
+      </div>
+    );
+  }
 
   if (showAddQuestion) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="max-w-7xl mx-auto">
-          <AddQuestionForm
+          <AdminQuestionForm
             onQuestionAdded={handleAddQuestion}
             onCancel={() => setShowAddQuestion(false)}
           />
@@ -237,38 +250,19 @@ const CodeEditor: React.FC = () => {
     );
   }
 
-  const allProblems = [sampleProblem, ...customProblems];
+  const allProblems = [sampleProblem, ...questions];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-800">DSA Code Editor</h1>
-            <Badge variant="secondary">
-              {hasSubmitted ? 'Submitted' : 'In Progress'}
-            </Badge>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-gray-600" />
-              <span className={`text-lg font-mono font-semibold ${getTimerColor()}`}>
-                {formatTime(timeLeft)}
-              </span>
-            </div>
-            
-            {lastSaved && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Save className="w-4 h-4" />
-                <span>Saved at {lastSaved.toLocaleTimeString()}</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <Header
+          timeLeft={timeLeft}
+          lastSaved={lastSaved}
+          hasSubmitted={hasSubmitted}
+          onAddQuestion={isAdmin ? () => setShowAddQuestion(true) : undefined}
+        />
 
-        {/* Problem Selection and Add Question */}
+        {/* Problem Selection */}
         <div className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm">
           <div className="flex items-center space-x-4">
             <label className="text-sm font-medium">Select Problem:</label>
@@ -284,37 +278,41 @@ const CodeEditor: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 {allProblems.map((problem, index) => (
-                  <SelectItem key={index} value={problem.title}>
+                  <SelectItem key={problem.id || index} value={problem.title}>
                     {problem.title} ({problem.difficulty})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          <Button
-            onClick={() => setShowAddQuestion(true)}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Question</span>
-          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Problem Statement */}
-          <div className="space-y-6">
-            <ProblemStatement problem={currentProblem} />
-            {submissionResult && <TestResults result={submissionResult} />}
-          </div>
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="min-h-[calc(100vh-240px)] rounded-lg border bg-white"
+        >
+          {/* Left Panel - Problem Statement */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-auto p-6">
+                <ProblemStatement problem={currentProblem} />
+                {submissionResult && (
+                  <div className="mt-6">
+                    <TestResults result={submissionResult} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </ResizablePanel>
 
-          {/* Code Editor */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-4">
+          <ResizableHandle withHandle />
+
+          {/* Right Panel - Code Editor */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <div className="flex flex-col h-full">
+              <div className="p-4 border-b bg-gray-50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Code Editor</CardTitle>
+                  <h3 className="text-lg font-semibold">Code Editor</h3>
                   <div className="flex items-center space-x-4">
                     <Select value={language} onValueChange={(value: Language) => setLanguage(value)}>
                       <SelectTrigger className="w-32">
@@ -352,37 +350,33 @@ const CodeEditor: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-              </CardHeader>
+              </div>
               
-              <CardContent className="p-0">
-                <div className="border rounded-lg overflow-hidden">
-                  <Editor
-                    height="500px"
-                    language={language === 'cpp' ? 'cpp' : language}
-                    value={code}
-                    onChange={(value) => setCode(value || '')}
-                    onMount={(editor) => {
-                      editorRef.current = editor;
-                    }}
-                    theme="vs-dark"
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      wordWrap: 'on',
-                      automaticLayout: true,
-                      scrollBeyondLastLine: false,
-                      renderLineHighlight: 'all',
-                      selectOnLineNumbers: true,
-                      readOnly: hasSubmitted,
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              <div className="flex-1">
+                <Editor
+                  height="100%"
+                  language={language === 'cpp' ? 'cpp' : language}
+                  value={code}
+                  onChange={(value) => setCode(value || '')}
+                  onMount={(editor) => {
+                    editorRef.current = editor;
+                  }}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    wordWrap: 'on',
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    renderLineHighlight: 'all',
+                    selectOnLineNumbers: true,
+                    readOnly: hasSubmitted,
+                  }}
+                />
+              </div>
 
-            {/* Status Information */}
-            <Card>
-              <CardContent className="pt-6">
+              {/* Status Information */}
+              <div className="p-4 border-t bg-gray-50">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${
@@ -408,10 +402,10 @@ const CodeEditor: React.FC = () => {
                     <span>Auto-save: Active</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
