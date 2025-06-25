@@ -89,6 +89,10 @@ const result = twoSum(nums, target);
 console.log("Result:", result);`
 };
 
+export const getCodeTemplate = (language: string): string => {
+  return codeTemplates[language as keyof typeof codeTemplates] || codeTemplates.javascript;
+};
+
 export const sampleProblem = {
   title: "Two Sum",
   difficulty: "Easy" as const,

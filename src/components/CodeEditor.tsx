@@ -12,6 +12,7 @@ import ClerkAdminQuestionForm from './admin/ClerkAdminQuestionForm';
 import { useClerkAuth } from '@/contexts/ClerkContext';
 import { Problem } from '@/types/Problem';
 import { getCodeTemplate } from '@/utils/codeTemplates';
+import { executeCode } from '@/utils/codeExecution';
 
 const CodeEditor: React.FC = () => {
   const { isAdmin } = useClerkAuth();
@@ -79,20 +80,24 @@ const CodeEditor: React.FC = () => {
   const handleRunCode = async () => {
     setIsRunning(true);
     try {
-      // Simulate code execution
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setTestResults({
-        passed: 2,
-        total: 3,
-        results: [
-          { input: "nums = [2,7,11,15], target = 9", expected: "[0,1]", actual: "[0,1]", passed: true },
-          { input: "nums = [3,2,4], target = 6", expected: "[1,2]", actual: "[1,2]", passed: true },
-          { input: "nums = [3,3], target = 6", expected: "[0,1]", actual: "[0,1]", passed: false, error: "Time Limit Exceeded" }
-        ]
-      });
+      const result = await executeCode(code, language);
+      setTestResults(result);
     } catch (error) {
       console.error('Error running code:', error);
+      setTestResults({
+        status: 'error',
+        executionTime: '0ms',
+        memoryUsed: '0MB',
+        testCasesPassed: '0/3',
+        failedTestCases: [
+          { input: "nums = [2,7,11,15], target = 9", expected: "[0,1]", actual: "Error" }
+        ],
+        errorMessage: 'Failed to execute code. Please check your implementation.',
+        suggestions: 'Make sure your code is syntactically correct.',
+        timeComplexity: 'Unknown',
+        spaceComplexity: 'Unknown',
+        correctness: 0
+      });
     } finally {
       setIsRunning(false);
     }
@@ -232,7 +237,7 @@ const CodeEditor: React.FC = () => {
                 
                 <ResizablePanel defaultSize={30} minSize={20}>
                   <div className="h-full bg-white rounded-lg p-4">
-                    <TestResults results={testResults} />
+                    {testResults && <TestResults result={testResults} />}
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
