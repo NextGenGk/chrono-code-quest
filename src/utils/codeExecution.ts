@@ -1,10 +1,9 @@
-'use client'
 
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from '@/integrations/supabase/client';
 
 // AI-powered code execution using Gemini API
 export const executeCode = async (code: string, language: string): Promise<any> => {
-  console.log('Executing code with AI analysis:', { language, codeLength: code.length })
+  console.log('Executing code with AI analysis:', { language, codeLength: code.length });
   
   try {
     const { data, error } = await supabase.functions.invoke('analyze-code', {
@@ -13,18 +12,18 @@ export const executeCode = async (code: string, language: string): Promise<any> 
         language: language,
         problemDescription: 'Two Sum problem'
       }
-    })
+    });
 
     if (error) {
-      console.error('Supabase function error:', error)
-      throw new Error(error.message)
+      console.error('Supabase function error:', error);
+      throw new Error(error.message);
     }
 
-    console.log('AI analysis result:', data)
-    return data
+    console.log('AI analysis result:', data);
+    return data;
 
   } catch (error) {
-    console.error('Code execution error:', error)
+    console.error('Code execution error:', error);
     
     // Fallback response if AI analysis fails
     return {
@@ -42,6 +41,6 @@ export const executeCode = async (code: string, language: string): Promise<any> 
       timeComplexity: 'Unknown',
       spaceComplexity: 'Unknown',
       correctness: 0
-    }
+    };
   }
-}
+};

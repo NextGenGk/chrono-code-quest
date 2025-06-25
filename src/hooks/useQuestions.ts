@@ -1,13 +1,12 @@
-'use client'
 
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
-import { Problem } from '@/types/Problem'
-import { toast } from '@/hooks/use-toast'
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Problem } from '@/types/Problem';
+import { toast } from '@/hooks/use-toast';
 
 export const useQuestions = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const questionsQuery = useQuery({
     queryKey: ['questions'],
@@ -15,11 +14,11 @@ export const useQuestions = () => {
       const { data, error } = await supabase
         .from('questions')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching questions:', error)
-        throw error
+        console.error('Error fetching questions:', error);
+        throw error;
       }
 
       // Transform Supabase data to Problem format
@@ -32,9 +31,9 @@ export const useQuestions = () => {
         description: q.description,
         examples: Array.isArray(q.examples) ? q.examples : [],
         constraints: q.constraints || []
-      })) as Problem[]
+      })) as Problem[];
     }
-  })
+  });
 
   const addQuestionMutation = useMutation({
     mutationFn: async (question: Omit<Problem, 'id'>) => {
@@ -51,31 +50,31 @@ export const useQuestions = () => {
           created_by: '00000000-0000-0000-0000-000000000000' // Placeholder for now
         })
         .select()
-        .single()
+        .single();
 
       if (error) {
-        console.error('Error adding question:', error)
-        throw error
+        console.error('Error adding question:', error);
+        throw error;
       }
 
-      return data
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questions'] })
+      queryClient.invalidateQueries({ queryKey: ['questions'] });
       toast({
         title: "Success!",
         description: "Question has been added to the database.",
-      })
+      });
     },
     onError: (error: any) => {
-      console.error('Failed to add question:', error)
+      console.error('Failed to add question:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to add question to database.",
         variant: "destructive",
-      })
+      });
     }
-  })
+  });
 
   return {
     questions: questionsQuery.data || [],
@@ -83,5 +82,5 @@ export const useQuestions = () => {
     isError: questionsQuery.isError,
     addQuestion: addQuestionMutation.mutate,
     isAddingQuestion: addQuestionMutation.isPending
-  }
-}
+  };
+};

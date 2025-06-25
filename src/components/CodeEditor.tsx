@@ -1,39 +1,35 @@
-'use client'
 
-import React, { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { Play, Save, RotateCcw } from 'lucide-react'
-import ProblemStatement from './ProblemStatement'
-import TestResults from './TestResults'
-import ClerkHeader from './layout/ClerkHeader'
-import ClerkAdminQuestionForm from './admin/ClerkAdminQuestionForm'
-import { ClerkAuthProvider, useClerkAuth } from '@/contexts/ClerkContext'
-import { Problem } from '@/types/Problem'
-import { getCodeTemplate } from '@/utils/codeTemplates'
-import { executeCode } from '@/utils/codeExecution'
-import { useAutoSubmit } from '@/hooks/useAutoSubmit'
-import { useQuestions } from '@/hooks/useQuestions'
-import { toast } from '@/hooks/use-toast'
+import React, { useState, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { Play, Save, RotateCcw } from 'lucide-react';
+import ProblemStatement from './ProblemStatement';
+import TestResults from './TestResults';
+import ClerkHeader from './layout/ClerkHeader';
+import ClerkAdminQuestionForm from './admin/ClerkAdminQuestionForm';
+import { useClerkAuth } from '@/contexts/ClerkContext';
+import { Problem } from '@/types/Problem';
+import { getCodeTemplate } from '@/utils/codeTemplates';
+import { executeCode } from '@/utils/codeExecution';
+import { useAutoSubmit } from '@/hooks/useAutoSubmit';
+import { useQuestions } from '@/hooks/useQuestions';
+import { toast } from '@/hooks/use-toast';
 
-// Dynamically import Monaco Editor to avoid SSR issues
-const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
-
-const CodeEditorContent: React.FC = () => {
-  const { isAdmin } = useClerkAuth()
-  const { questions, isLoading, addQuestion } = useQuestions()
-  const [code, setCode] = useState('')
-  const [language, setLanguage] = useState('javascript')
-  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
-  const [testResults, setTestResults] = useState<any>(null)
-  const [isRunning, setIsRunning] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(1800) // 30 minutes
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [hasSubmitted, setHasSubmitted] = useState(false)
-  const [showAddQuestion, setShowAddQuestion] = useState(false)
-  const [autoSubmitEnabled, setAutoSubmitEnabled] = useState(true)
+const CodeEditor: React.FC = () => {
+  const { isAdmin } = useClerkAuth();
+  const { questions, isLoading, addQuestion } = useQuestions();
+  const [code, setCode] = useState('');
+  const [language, setLanguage] = useState('javascript');
+  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
+  const [testResults, setTestResults] = useState<any>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [autoSubmitEnabled, setAutoSubmitEnabled] = useState(true);
 
   // Default problem for demo
   const defaultProblem: Problem = {
@@ -63,49 +59,49 @@ const CodeEditorContent: React.FC = () => {
       "-10^9 <= target <= 10^9",
       "Only one valid answer exists."
     ]
-  }
+  };
 
-  const allProblems = [defaultProblem, ...questions]
+  const allProblems = [defaultProblem, ...questions];
 
   useEffect(() => {
     if (!isLoading && allProblems.length > 0) {
-      setSelectedProblem(allProblems[0])
-      setCode(getCodeTemplate(language))
+      setSelectedProblem(allProblems[0]);
+      setCode(getCodeTemplate(language));
     }
-  }, [language, isLoading, questions.length])
+  }, [language, isLoading, questions.length]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1))
-    }, 1000)
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = () => {
-    setHasSubmitted(true)
-    handleSave()
+    setHasSubmitted(true);
+    handleSave();
     toast({
       title: "Code Submitted",
       description: "Your solution has been submitted successfully.",
-    })
-    console.log('Solution submitted')
-  }
+    });
+    console.log('Solution submitted');
+  };
 
   // Auto-submit hook
   useAutoSubmit({
     code,
     onSubmit: handleSubmit,
     isEnabled: autoSubmitEnabled && !hasSubmitted
-  })
+  });
 
   const handleRunCode = async () => {
-    setIsRunning(true)
+    setIsRunning(true);
     try {
-      const result = await executeCode(code, language)
-      setTestResults(result)
+      const result = await executeCode(code, language);
+      setTestResults(result);
     } catch (error) {
-      console.error('Error running code:', error)
+      console.error('Error running code:', error);
       setTestResults({
         status: 'error',
         executionTime: '0ms',
@@ -119,28 +115,28 @@ const CodeEditorContent: React.FC = () => {
         timeComplexity: 'Unknown',
         spaceComplexity: 'Unknown',
         correctness: 0
-      })
+      });
     } finally {
-      setIsRunning(false)
+      setIsRunning(false);
     }
-  }
+  };
 
   const handleSave = () => {
-    setLastSaved(new Date())
-    console.log('Code saved:', code)
-  }
+    setLastSaved(new Date());
+    console.log('Code saved:', code);
+  };
 
   const handleReset = () => {
-    setCode(getCodeTemplate(language))
-    setTestResults(null)
-  }
+    setCode(getCodeTemplate(language));
+    setTestResults(null);
+  };
 
   const handleQuestionAdded = (newQuestion: Problem) => {
-    addQuestion(newQuestion)
-    setShowAddQuestion(false)
-  }
+    addQuestion(newQuestion);
+    setShowAddQuestion(false);
+  };
 
-  const currentProblem = selectedProblem || defaultProblem
+  const currentProblem = selectedProblem || defaultProblem;
 
   return (
     <div className="h-screen bg-gray-50 p-4">
@@ -171,8 +167,8 @@ const CodeEditorContent: React.FC = () => {
                   <Select 
                     value={currentProblem.id || "default"} 
                     onValueChange={(value) => {
-                      const problem = allProblems.find(p => (p.id || "default") === value) || defaultProblem
-                      setSelectedProblem(problem)
+                      const problem = allProblems.find(p => (p.id || "default") === value) || defaultProblem;
+                      setSelectedProblem(problem);
                     }}
                   >
                     <SelectTrigger>
@@ -261,15 +257,7 @@ const CodeEditorContent: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-const CodeEditor: React.FC = () => {
-  return (
-    <ClerkAuthProvider>
-      <CodeEditorContent />
-    </ClerkAuthProvider>
-  )
-}
-
-export default CodeEditor
+export default CodeEditor;
