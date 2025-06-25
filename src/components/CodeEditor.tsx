@@ -13,12 +13,15 @@ import { useClerkAuth } from '@/contexts/ClerkContext';
 import { Problem } from '@/types/Problem';
 import { getCodeTemplate } from '@/utils/codeTemplates';
 import { executeCode } from '@/utils/codeExecution';
+import { useAutoSubmit } from '@/hooks/useAutoSubmit';
+import { useQuestions } from '@/hooks/useQuestions';
+import { toast } from '@/hooks/use-toast';
 
 const CodeEditor: React.FC = () => {
   const { isAdmin } = useClerkAuth();
+  const { questions, isLoading, addQuestion } = useQuestions();
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const [problems, setProblems] = useState<Problem[]>([]);
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
   const [testResults, setTestResults] = useState<any>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -26,6 +29,7 @@ const CodeEditor: React.FC = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [autoSubmitEnabled, setAutoSubmitEnabled] = useState(true);
 
   // Default problem for demo
   const defaultProblem: Problem = {
@@ -57,17 +61,14 @@ const CodeEditor: React.FC = () => {
     ]
   };
 
-  useEffect(() => {
-    setProblems([defaultProblem]);
-    setSelectedProblem(defaultProblem);
-    setCode(getCodeTemplate(language));
-  }, []);
+  const allProblems = [defaultProblem, ...questions];
 
   useEffect(() => {
-    if (selectedProblem) {
+    if (!isLoading && allProblems.length > 0) {
+      setSelectedProblem(allProblems[0]);
       setCode(getCodeTemplate(language));
     }
-  }, [language, selectedProblem]);
+  }, [language, isLoading, questions.length]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -76,6 +77,23 @@ const CodeEditor: React.FC = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  const handleSubmit = () => {
+    setHasSubmitted(true);
+    handleSave();
+    toast({
+      title: "Code Submitted",
+      description: "Your solution has been submitted successfully.",
+    });
+    console.log('Solution submitted');
+  };
+
+  // Auto-submit hook
+  useAutoSubmit({
+    code,
+    onSubmit: handleSubmit,
+    isEnabled: autoSubmitEnabled && !hasSubmitted
+  });
 
   const handleRunCode = async () => {
     setIsRunning(true);
@@ -105,7 +123,6 @@ const CodeEditor: React.FC = () => {
 
   const handleSave = () => {
     setLastSaved(new Date());
-    // Here you would typically save to a backend
     console.log('Code saved:', code);
   };
 
@@ -114,16 +131,8 @@ const CodeEditor: React.FC = () => {
     setTestResults(null);
   };
 
-  const handleSubmit = () => {
-    setHasSubmitted(true);
-    handleSave();
-    // Here you would typically submit the solution
-    console.log('Solution submitted');
-  };
-
   const handleQuestionAdded = (newQuestion: Problem) => {
-    const questionWithId = { ...newQuestion, id: Date.now().toString() };
-    setProblems(prev => [...prev, questionWithId]);
+    addQuestion(newQuestion);
     setShowAddQuestion(false);
   };
 
@@ -137,6 +146,8 @@ const CodeEditor: React.FC = () => {
           lastSaved={lastSaved}
           hasSubmitted={hasSubmitted}
           onAddQuestion={isAdmin ? () => setShowAddQuestion(true) : undefined}
+          autoSubmitEnabled={autoSubmitEnabled}
+          onToggleAutoSubmit={() => setAutoSubmitEnabled(!autoSubmitEnabled)}
         />
 
         {showAddQuestion && (
@@ -156,7 +167,7 @@ const CodeEditor: React.FC = () => {
                   <Select 
                     value={currentProblem.id || "default"} 
                     onValueChange={(value) => {
-                      const problem = problems.find(p => p.id === value) || defaultProblem;
+                      const problem = allProblems.find(p => (p.id || "default") === value) || defaultProblem;
                       setSelectedProblem(problem);
                     }}
                   >
@@ -164,8 +175,8 @@ const CodeEditor: React.FC = () => {
                       <SelectValue placeholder="Select a problem" />
                     </SelectTrigger>
                     <SelectContent>
-                      {problems.map((problem) => (
-                        <SelectItem key={problem.id || "default"} value={problem.id || "default"}>
+                      {allProblems.map((problem, index) => (
+                        <SelectItem key={problem.id || `default-${index}`} value={problem.id || `default-${index}`}>
                           {problem.title} ({problem.difficulty})
                         </SelectItem>
                       ))}

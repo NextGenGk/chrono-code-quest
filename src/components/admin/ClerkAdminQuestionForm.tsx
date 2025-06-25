@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -118,7 +117,6 @@ const ClerkAdminQuestionForm: React.FC<ClerkAdminQuestionFormProps> = ({ onQuest
       const validConstraints = formData.constraints.filter(c => c.trim());
 
       const newQuestion: Problem = {
-        id: Date.now().toString(),
         title: formData.title,
         difficulty: formData.difficulty,
         timeLimit: formData.timeLimit,
@@ -128,11 +126,6 @@ const ClerkAdminQuestionForm: React.FC<ClerkAdminQuestionFormProps> = ({ onQuest
         constraints: validConstraints
       };
 
-      toast({
-        title: "Success!",
-        description: "Question has been added successfully.",
-      });
-      
       onQuestionAdded(newQuestion);
     } catch (error: any) {
       toast({
@@ -155,7 +148,7 @@ const ClerkAdminQuestionForm: React.FC<ClerkAdminQuestionFormProps> = ({ onQuest
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl">Add New Question (Admin)</CardTitle>
