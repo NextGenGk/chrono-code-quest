@@ -9,7 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-export default async function handler(req: Request): Promise<Response> {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -143,4 +143,4 @@ Analyze the algorithm approach, check for correctness, estimate performance, and
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-}
+});
