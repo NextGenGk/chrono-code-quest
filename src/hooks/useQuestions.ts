@@ -31,7 +31,7 @@ export const useQuestions = () => {
         timeLimit: q.time_limit,
         memoryLimit: q.memory_limit,
         description: q.description,
-        examples: Array.isArray(q.examples) ? (q.examples as Example[]) : [],
+        examples: Array.isArray(q.examples) ? (q.examples as unknown as Example[]) : [],
         constraints: q.constraints || []
       })) as Problem[];
     }
@@ -80,7 +80,7 @@ export const useQuestions = () => {
           time_limit: question.timeLimit,
           memory_limit: question.memoryLimit,
           description: question.description,
-          examples: question.examples as any, // Cast to Json type for Supabase
+          examples: question.examples as unknown, // Cast to unknown first, then to Json
           constraints: question.constraints,
           created_by: user.id
         })
