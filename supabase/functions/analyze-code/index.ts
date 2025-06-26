@@ -1,8 +1,7 @@
 
-/// <reference types="https://deno.land/std@0.168.0/http/server.ts" />
+/// <reference types="https://deno.land/x/xhr@0.1.0/mod.ts" />
 
-// Supabase Edge Function for code analysis using Gemini API
-// No need for explicit type imports - Deno types are available in the runtime
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
@@ -11,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
