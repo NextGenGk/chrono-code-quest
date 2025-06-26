@@ -1,8 +1,6 @@
 
-/// <reference types="https://deno.land/std@0.168.0/types.d.ts" />
-
-// Remove the XHR import as it's causing type definition issues
-// Deno runtime has fetch built-in, so we don't need external XHR
+// Supabase Edge Function for code analysis using Gemini API
+// No need for explicit type imports - Deno types are available in the runtime
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
