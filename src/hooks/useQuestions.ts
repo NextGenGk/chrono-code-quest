@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/nextjs';
 import { supabase } from '@/integrations/supabase/client';
 import { Problem } from '@/types/Problem';
 import { toast } from '@/hooks/use-toast';
 
 export const useQuestions = () => {
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
   const questionsQuery = useQuery({
     queryKey: ['questions'],
@@ -37,6 +39,39 @@ export const useQuestions = () => {
 
   const addQuestionMutation = useMutation({
     mutationFn: async (question: Omit<Problem, 'id'>) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // First, ensure the user profile exists in Supabase
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error checking user profile:', profileError);
+        throw profileError;
+      }
+
+      if (!profile) {
+        // Create the profile if it doesn't exist
+        const { error: insertProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.emailAddresses?.[0]?.emailAddress || '',
+            full_name: user.fullName || user.firstName || '',
+            role: 'admin' // Set as admin since they're adding questions
+          });
+
+        if (insertProfileError) {
+          console.error('Error creating user profile:', insertProfileError);
+          throw insertProfileError;
+        }
+      }
+
       const { data, error } = await supabase
         .from('questions')
         .insert({
@@ -47,7 +82,7 @@ export const useQuestions = () => {
           description: question.description,
           examples: question.examples,
           constraints: question.constraints,
-          created_by: '00000000-0000-0000-0000-000000000000' // Placeholder for now
+          created_by: user.id
         })
         .select()
         .single();
