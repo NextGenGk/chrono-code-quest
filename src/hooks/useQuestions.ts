@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
 import { supabase } from '@/integrations/supabase/client';
-import { Problem } from '@/types/Problem';
+import { Problem, Example } from '@/types/Problem';
 import { toast } from '@/hooks/use-toast';
 
 export const useQuestions = () => {
@@ -23,7 +23,7 @@ export const useQuestions = () => {
         throw error;
       }
 
-      // Transform Supabase data to Problem format
+      // Transform Supabase data to Problem format with proper type conversion
       return data.map(q => ({
         id: q.id,
         title: q.title,
@@ -31,7 +31,7 @@ export const useQuestions = () => {
         timeLimit: q.time_limit,
         memoryLimit: q.memory_limit,
         description: q.description,
-        examples: Array.isArray(q.examples) ? q.examples : [],
+        examples: Array.isArray(q.examples) ? (q.examples as Example[]) : [],
         constraints: q.constraints || []
       })) as Problem[];
     }
@@ -80,7 +80,7 @@ export const useQuestions = () => {
           time_limit: question.timeLimit,
           memory_limit: question.memoryLimit,
           description: question.description,
-          examples: question.examples,
+          examples: question.examples as any, // Cast to Json type for Supabase
           constraints: question.constraints,
           created_by: user.id
         })
