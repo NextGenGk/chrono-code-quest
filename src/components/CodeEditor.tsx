@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Play, Save, RotateCcw } from 'lucide-react'
+import { useUser } from '@clerk/clerk-react'
 import ProblemStatement from './ProblemStatement'
 import TestResults from './TestResults'
 import Header from './layout/Header'
 import AdminQuestionForm from './admin/AdminQuestionForm'
-import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Problem } from '@/types/Problem'
 import { getCodeTemplate } from '@/utils/codeTemplates'
 import { executeCode } from '@/utils/codeExecution'
@@ -19,8 +19,8 @@ import { useAutoSubmit } from '@/hooks/useAutoSubmit'
 import { useQuestions } from '@/hooks/useQuestions'
 import { toast } from '@/hooks/use-toast'
 
-const CodeEditorContent: React.FC = () => {
-  const { user, isAdmin } = useAuth()
+const CodeEditor: React.FC = () => {
+  const { user } = useUser()
   const { questions, isLoading, addQuestion } = useQuestions()
   const [code, setCode] = useState('')
   const [language, setLanguage] = useState('javascript')
@@ -32,6 +32,9 @@ const CodeEditorContent: React.FC = () => {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showAddQuestion, setShowAddQuestion] = useState(false)
   const [autoSubmitEnabled, setAutoSubmitEnabled] = useState(true)
+
+  // Check if user is admin
+  const isAdmin = user?.publicMetadata?.role === 'admin' || false
 
   // Default problem for demo
   const defaultProblem: Problem = {
@@ -259,14 +262,6 @@ const CodeEditorContent: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
-
-const CodeEditor: React.FC = () => {
-  return (
-    <AuthProvider>
-      <CodeEditorContent />
-    </AuthProvider>
   )
 }
 

@@ -5,8 +5,8 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Clock, Save, LogOut } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { Plus, Clock, Save } from 'lucide-react'
+import { useUser, UserButton } from '@clerk/clerk-react'
 
 interface HeaderProps {
   timeLeft: number
@@ -25,7 +25,10 @@ const Header: React.FC<HeaderProps> = ({
   autoSubmitEnabled = true,
   onToggleAutoSubmit
 }) => {
-  const { user, isAdmin, signOut } = useAuth()
+  const { user } = useUser()
+
+  // Check if user is admin based on metadata or role
+  const isAdmin = user?.publicMetadata?.role === 'admin' || false
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
@@ -103,12 +106,15 @@ const Header: React.FC<HeaderProps> = ({
           {/* User menu */}
           <div className="flex items-center space-x-3">
             <span className="text-sm text-gray-700">
-              {user?.email}
+              {user?.emailAddresses[0]?.emailAddress}
             </span>
-            <Button onClick={signOut} size="sm" variant="outline">
-              <LogOut className="w-4 h-4 mr-1" />
-              Sign Out
-            </Button>
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-8 h-8"
+                }
+              }}
+            />
           </div>
         </div>
       </div>
