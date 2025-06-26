@@ -1,5 +1,5 @@
 
-// @deno-types="https://deno.land/x/xhr@0.1.0/mod.ts"
+/// <reference types="https://deno.land/x/xhr@0.1.0/mod.ts" />
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');

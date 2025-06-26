@@ -80,7 +80,7 @@ export const useQuestions = () => {
           time_limit: question.timeLimit,
           memory_limit: question.memoryLimit,
           description: question.description,
-          examples: question.examples as unknown, // Cast to unknown first, then to Json
+          examples: JSON.parse(JSON.stringify(question.examples)), // Convert to Json type safely
           constraints: question.constraints,
           created_by: user.id
         })
