@@ -1,4 +1,6 @@
 
+/// <reference types="https://deno.land/std@0.168.0/http/server.ts" />
+
 // Supabase Edge Function for code analysis using Gemini API
 // No need for explicit type imports - Deno types are available in the runtime
 
