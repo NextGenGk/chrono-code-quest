@@ -1,14 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Problem, Example } from '@/types/Problem';
 import { toast } from '@/hooks/use-toast';
 
 export const useQuestions = () => {
   const queryClient = useQueryClient();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const questionsQuery = useQuery({
     queryKey: ['questions'],
@@ -61,8 +61,8 @@ export const useQuestions = () => {
           .from('profiles')
           .insert({
             id: user.id,
-            email: user.emailAddresses?.[0]?.emailAddress || '',
-            full_name: user.fullName || user.firstName || '',
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
             role: 'admin' // Set as admin since they're adding questions
           });
 

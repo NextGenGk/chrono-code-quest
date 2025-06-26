@@ -1,16 +1,17 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
+import { Editor } from '@monaco-editor/react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Play, Save, RotateCcw } from 'lucide-react'
 import ProblemStatement from './ProblemStatement'
 import TestResults from './TestResults'
-import ClerkHeader from './layout/ClerkHeader'
-import ClerkAdminQuestionForm from './admin/ClerkAdminQuestionForm'
-import { ClerkAuthProvider, useClerkAuth } from '@/contexts/ClerkContext'
+import Header from './layout/Header'
+import AdminQuestionForm from './admin/AdminQuestionForm'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Problem } from '@/types/Problem'
 import { getCodeTemplate } from '@/utils/codeTemplates'
 import { executeCode } from '@/utils/codeExecution'
@@ -18,11 +19,8 @@ import { useAutoSubmit } from '@/hooks/useAutoSubmit'
 import { useQuestions } from '@/hooks/useQuestions'
 import { toast } from '@/hooks/use-toast'
 
-// Dynamically import Monaco Editor to avoid SSR issues
-const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
-
 const CodeEditorContent: React.FC = () => {
-  const { isAdmin } = useClerkAuth()
+  const { user, isAdmin } = useAuth()
   const { questions, isLoading, addQuestion } = useQuestions()
   const [code, setCode] = useState('')
   const [language, setLanguage] = useState('javascript')
@@ -145,7 +143,7 @@ const CodeEditorContent: React.FC = () => {
   return (
     <div className="h-screen bg-gray-50 p-4">
       <div className="h-full flex flex-col space-y-4">
-        <ClerkHeader
+        <Header
           timeLeft={timeLeft}
           lastSaved={lastSaved}
           hasSubmitted={hasSubmitted}
@@ -156,7 +154,7 @@ const CodeEditorContent: React.FC = () => {
 
         {showAddQuestion && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <ClerkAdminQuestionForm
+            <AdminQuestionForm
               onQuestionAdded={handleQuestionAdded}
               onClose={() => setShowAddQuestion(false)}
             />
@@ -266,9 +264,9 @@ const CodeEditorContent: React.FC = () => {
 
 const CodeEditor: React.FC = () => {
   return (
-    <ClerkAuthProvider>
+    <AuthProvider>
       <CodeEditorContent />
-    </ClerkAuthProvider>
+    </AuthProvider>
   )
 }
 
