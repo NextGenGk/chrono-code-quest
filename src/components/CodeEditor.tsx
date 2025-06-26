@@ -16,12 +16,11 @@ import { Problem } from '@/types/Problem'
 import { getCodeTemplate } from '@/utils/codeTemplates'
 import { executeCode } from '@/utils/codeExecution'
 import { useAutoSubmit } from '@/hooks/useAutoSubmit'
-import { useQuestions } from '@/hooks/useQuestions'
 import { toast } from '@/hooks/use-toast'
 
 const CodeEditor: React.FC = () => {
   const { user } = useUser()
-  const { questions, isLoading, addQuestion } = useQuestions()
+  const [questions, setQuestions] = useState<Problem[]>([])
   const [code, setCode] = useState('')
   const [language, setLanguage] = useState('javascript')
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
@@ -69,11 +68,11 @@ const CodeEditor: React.FC = () => {
   const allProblems = [defaultProblem, ...questions]
 
   useEffect(() => {
-    if (!isLoading && allProblems.length > 0) {
+    if (allProblems.length > 0) {
       setSelectedProblem(allProblems[0])
       setCode(getCodeTemplate(language))
     }
-  }, [language, isLoading, questions.length])
+  }, [language, questions.length])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -137,7 +136,7 @@ const CodeEditor: React.FC = () => {
   }
 
   const handleQuestionAdded = (newQuestion: Problem) => {
-    addQuestion(newQuestion)
+    setQuestions(prev => [...prev, newQuestion])
     setShowAddQuestion(false)
   }
 
