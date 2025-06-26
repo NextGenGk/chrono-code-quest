@@ -1,4 +1,6 @@
 
+/// <reference types="https://deno.land/std@0.168.0/types.d.ts" />
+
 // Remove the XHR import as it's causing type definition issues
 // Deno runtime has fetch built-in, so we don't need external XHR
 
