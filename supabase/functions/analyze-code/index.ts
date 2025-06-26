@@ -1,6 +1,6 @@
 
-/// <reference types="https://deno.land/x/xhr@0.1.0/mod.ts" />
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// Remove the XHR import as it's causing type definition issues
+// Deno runtime has fetch built-in, so we don't need external XHR
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
