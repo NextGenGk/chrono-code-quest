@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -17,6 +16,7 @@ import { getCodeTemplate } from '@/utils/codeTemplates'
 import { executeCode } from '@/utils/codeExecution'
 import { toast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+import { useAutoSubmit } from '@/hooks/useAutoSubmit'
 
 const CodeEditor: React.FC = () => {
   const { user } = useUser()
@@ -34,6 +34,13 @@ const CodeEditor: React.FC = () => {
 
   // Check if user is admin
   const isAdmin = user?.publicMetadata?.role === 'admin' || false
+
+  // Auto-submit functionality
+  useAutoSubmit({
+    code,
+    onSubmit: handleSave,
+    isEnabled: !hasSubmitted
+  })
 
   // Default problem for demo
   const defaultProblem: Problem = {
