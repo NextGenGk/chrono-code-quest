@@ -18,10 +18,25 @@ import { toast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { useAutoSubmit } from '@/hooks/useAutoSubmit'
 
+export interface Problem {
+  id: string;
+  title: string;
+  difficulty: string;
+  timeLimit: string;
+  memoryLimit: string;
+  description: string;
+  examples: any[];
+  constraints: string[];
+  starterCodeJS?: string;
+  starterCodePython?: string;
+  starterCodeJava?: string;
+  starterCodeCpp?: string;
+}
+
 const CodeEditor: React.FC = () => {
   const { user } = useUser()
   const [questions, setQuestions] = useState<Problem[]>([])
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState<string>("")
   const [language, setLanguage] = useState('javascript')
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
   const [testResults, setTestResults] = useState<any>(null)
@@ -35,42 +50,17 @@ const CodeEditor: React.FC = () => {
   // Check if user is admin
   const isAdmin = user?.publicMetadata?.role === 'admin' || false
 
+  const handleSave = () => {
+    setLastSaved(new Date())
+    console.log('Code saved:', code)
+  }
+
   // Auto-submit functionality
   useAutoSubmit({
     code,
     onSubmit: handleSave,
     isEnabled: !hasSubmitted
   })
-
-  // Default problem for demo
-  const defaultProblem: Problem = {
-    title: "Two Sum",
-    difficulty: "Easy",
-    timeLimit: "30 minutes",
-    memoryLimit: "256 MB",
-    description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
-    examples: [
-      {
-        input: "nums = [2,7,11,15], target = 9",
-        output: "[0,1]",
-        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]."
-      },
-      {
-        input: "nums = [3,2,4], target = 6",
-        output: "[1,2]"
-      },
-      {
-        input: "nums = [3,3], target = 6",
-        output: "[0,1]"
-      }
-    ],
-    constraints: [
-      "2 <= nums.length <= 10^4",
-      "-10^9 <= nums[i] <= 10^9",
-      "-10^9 <= target <= 10^9",
-      "Only one valid answer exists."
-    ]
-  }
 
   // Fetch questions from database
   const fetchQuestions = async () => {
@@ -80,6 +70,8 @@ const CodeEditor: React.FC = () => {
         .from('questions')
         .select('*')
         .order('created_at', { ascending: true })
+
+      console.log('Fetched questions:', data, error)
 
       if (error) {
         console.error('Error fetching questions:', error)
@@ -95,15 +87,20 @@ const CodeEditor: React.FC = () => {
         const formattedQuestions: Problem[] = data.map(q => ({
           id: q.id,
           title: q.title,
-          difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
+          difficulty: q.difficulty,
           timeLimit: q.time_limit,
           memoryLimit: q.memory_limit,
           description: q.description,
-          examples: q.examples as any[],
-          constraints: q.constraints
+          examples: q.examples,
+          constraints: q.constraints,
+          starterCodeJS: q.starter_code_js,
+          starterCodePython: q.starter_code_python,
+          starterCodeJava: q.starter_code_java,
+          starterCodeCpp: q.starter_code_cpp,
         }))
         setQuestions(formattedQuestions)
         console.log(`Loaded ${formattedQuestions.length} questions from database`)
+        console.log('Fetched questions:', data)
       }
     } catch (error) {
       console.error('Error fetching questions:', error)
@@ -117,18 +114,17 @@ const CodeEditor: React.FC = () => {
     }
   }
 
-  const allProblems = [defaultProblem, ...questions]
+  const allProblems = questions
 
   useEffect(() => {
     fetchQuestions()
   }, [])
 
   useEffect(() => {
-    if (allProblems.length > 0) {
-      setSelectedProblem(allProblems[0])
-      setCode(getCodeTemplate(language))
+    if (questions.length > 0 && !selectedProblem) {
+      setSelectedProblem(questions[0])
     }
-  }, [language, questions.length])
+  }, [questions, selectedProblem])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -137,6 +133,43 @@ const CodeEditor: React.FC = () => {
 
     return () => clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    // Set code when language or selectedProblem changes
+    if (selectedProblem) {
+      let starter = '';
+      switch (language) {
+        case 'javascript':
+          starter = selectedProblem.starterCodeJS || getCodeTemplate('javascript');
+          break;
+        case 'python':
+          starter = selectedProblem.starterCodePython || getCodeTemplate('python');
+          break;
+        case 'java':
+          starter = selectedProblem.starterCodeJava || getCodeTemplate('java');
+          break;
+        case 'cpp':
+          starter = selectedProblem.starterCodeCpp || getCodeTemplate('cpp');
+          break;
+        default:
+          starter = getCodeTemplate(language);
+      }
+      setCode(starter);
+    } else {
+      setCode(getCodeTemplate(language));
+    }
+  }, [language, selectedProblem]);
+
+  useEffect(() => {
+    window.monaco?.editor.defineTheme('myTheme', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#f3f4f6', // your desired color
+      },
+    });
+  }, []);
 
   const handleSubmit = () => {
     setHasSubmitted(true)
@@ -172,11 +205,6 @@ const CodeEditor: React.FC = () => {
     } finally {
       setIsRunning(false)
     }
-  }
-
-  const handleSave = () => {
-    setLastSaved(new Date())
-    console.log('Code saved:', code)
   }
 
   const handleReset = () => {
@@ -232,12 +260,20 @@ const CodeEditor: React.FC = () => {
     setShowAddQuestion(false)
   }
 
-  const currentProblem = selectedProblem || defaultProblem
+  const currentProblem = selectedProblem || questions[0]
 
   if (isLoadingQuestions) {
     return (
       <div className="h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-lg">Loading questions...</div>
+      </div>
+    )
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg">No questions found in the database.</div>
       </div>
     )
   }
@@ -267,18 +303,18 @@ const CodeEditor: React.FC = () => {
               <div className="h-full bg-white rounded-lg p-4 overflow-auto">
                 <div className="mb-4">
                   <Select 
-                    value={currentProblem.id || "default"} 
+                    value={selectedProblem?.id || ""} 
                     onValueChange={(value) => {
-                      const problem = allProblems.find(p => (p.id || "default") === value) || defaultProblem
-                      setSelectedProblem(problem)
+                      const problem = questions.find(p => p.id === value);
+                      if (problem) setSelectedProblem(problem);
                     }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a problem" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allProblems.map((problem, index) => (
-                        <SelectItem key={problem.id || `default-${index}`} value={problem.id || `default-${index}`}>
+                      {questions.map((problem) => (
+                        <SelectItem key={problem.id} value={problem.id}>
                           {problem.title} ({problem.difficulty})
                         </SelectItem>
                       ))}
@@ -328,20 +364,15 @@ const CodeEditor: React.FC = () => {
                     </div>
                     
                     <div className="h-[calc(100%-60px)]">
-                      <Editor
-                        height="100%"
-                        language={language}
-                        theme="vs-light"
-                        value={code}
-                        onChange={(value) => setCode(value || '')}
-                        options={{
-                          minimap: { enabled: false },
-                          fontSize: 14,
-                          lineNumbers: 'on',
-                          scrollBeyondLastLine: false,
-                          automaticLayout: true,
-                        }}
-                      />
+                      <div className="bg-gray-100 p-2 rounded">
+                        <Editor
+                          height="400px"
+                          language={language}
+                          value={code}
+                          onChange={value => setCode(value || '')}
+                          theme="vs-dark"
+                        />
+                      </div>
                     </div>
                   </div>
                 </ResizablePanel>

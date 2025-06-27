@@ -1,39 +1,14 @@
-export const getCodeTemplate = (language: string): string => {
-  const templates = {
-    javascript: `/**
- * @param {number[]} nums
- * @param {number} target
- * @return {number[]}
- */
-var twoSum = function(nums, target) {
-    // Your solution here
-    
-};`,
-    
-    python: `def twoSum(nums, target):
-    """
-    :type nums: List[int]
-    :type target: int
-    :rtype: List[int]
-    """
-    # Your solution here
-    pass`,
-    
-    java: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Your solution here
-        
-    }
-}`,
-    
-    cpp: `class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // Your solution here
-        
-    }
-};`
-  };
-
-  return templates[language as keyof typeof templates] || templates.javascript;
-};
+export function getCodeTemplate(language) {
+  switch (language) {
+    case 'javascript':
+      return `// Write your JavaScript code here\nfunction main() {\n  // ...\n}`;
+    case 'python':
+      return `# Write your Python code here\ndef main():\n    pass`;
+    case 'java':
+      return `// Write your Java code here\npublic class Solution {\n    public static void main(String[] args) {\n        // ...\n    }\n}`;
+    case 'cpp':
+      return `// Write your C++ code here\n#include <iostream>\nusing namespace std;\n\nint main() {\n    // ...\n    return 0;\n}`;
+    default:
+      return '';
+  }
+}
