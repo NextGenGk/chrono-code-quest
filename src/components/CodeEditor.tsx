@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -15,7 +14,6 @@ import AdminQuestionForm from './admin/AdminQuestionForm'
 import { Problem } from '@/types/Problem'
 import { getCodeTemplate } from '@/utils/codeTemplates'
 import { executeCode } from '@/utils/codeExecution'
-import { useAutoSubmit } from '@/hooks/useAutoSubmit'
 import { toast } from '@/hooks/use-toast'
 
 const CodeEditor: React.FC = () => {
@@ -30,7 +28,6 @@ const CodeEditor: React.FC = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showAddQuestion, setShowAddQuestion] = useState(false)
-  const [autoSubmitEnabled, setAutoSubmitEnabled] = useState(true)
 
   // Check if user is admin
   const isAdmin = user?.publicMetadata?.role === 'admin' || false
@@ -92,13 +89,6 @@ const CodeEditor: React.FC = () => {
     console.log('Solution submitted')
   }
 
-  // Auto-submit hook
-  useAutoSubmit({
-    code,
-    onSubmit: handleSubmit,
-    isEnabled: autoSubmitEnabled && !hasSubmitted
-  })
-
   const handleRunCode = async () => {
     setIsRunning(true)
     try {
@@ -150,8 +140,6 @@ const CodeEditor: React.FC = () => {
           lastSaved={lastSaved}
           hasSubmitted={hasSubmitted}
           onAddQuestion={isAdmin ? () => setShowAddQuestion(true) : undefined}
-          autoSubmitEnabled={autoSubmitEnabled}
-          onToggleAutoSubmit={() => setAutoSubmitEnabled(!autoSubmitEnabled)}
         />
 
         {showAddQuestion && (

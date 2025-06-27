@@ -4,7 +4,6 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Plus, Clock, Save } from 'lucide-react'
 import { useUser, UserButton } from '@clerk/clerk-react'
 
@@ -13,17 +12,13 @@ interface HeaderProps {
   lastSaved: Date | null
   hasSubmitted: boolean
   onAddQuestion?: () => void
-  autoSubmitEnabled?: boolean
-  onToggleAutoSubmit?: () => void
 }
 
 const Header: React.FC<HeaderProps> = ({
   timeLeft,
   lastSaved,
   hasSubmitted,
-  onAddQuestion,
-  autoSubmitEnabled = true,
-  onToggleAutoSubmit
+  onAddQuestion
 }) => {
   const { user } = useUser()
 
@@ -60,18 +55,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center space-x-6">
-          {/* Auto-submit toggle */}
-          <div className="flex items-center space-x-2">
-            <label htmlFor="auto-submit" className="text-sm font-medium text-gray-700">
-              Auto-submit:
-            </label>
-            <Switch
-              id="auto-submit"
-              checked={autoSubmitEnabled}
-              onCheckedChange={onToggleAutoSubmit}
-            />
-          </div>
-
           {/* Timer */}
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-gray-500" />
