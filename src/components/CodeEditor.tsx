@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Editor } from '@monaco-editor/react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -46,6 +46,7 @@ const CodeEditor: React.FC = () => {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showAddQuestion, setShowAddQuestion] = useState(false)
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true)
+  const timerRef = useRef(null)
 
   // Check if user is admin
   const isAdmin = user?.publicMetadata?.role === 'admin' || false
@@ -127,11 +128,11 @@ const CodeEditor: React.FC = () => {
   }, [questions, selectedProblem])
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setTimeLeft((prev) => Math.max(0, prev - 1))
     }, 1000)
 
-    return () => clearInterval(timer)
+    return () => clearInterval(timerRef.current)
   }, [])
 
   useEffect(() => {
@@ -175,10 +176,13 @@ const CodeEditor: React.FC = () => {
     setHasSubmitted(true)
     handleSave()
     toast({
-      title: "Code Submitted",
-      description: "Your solution has been submitted successfully.",
+      title: "Code Auto-Submitted",
+      description: "Your code was automatically submitted when you left the tab.",
     })
-    console.log('Solution submitted')
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+    }
+    console.log('Solution auto-submitted and timer stopped')
   }
 
   const handleRunCode = async () => {
@@ -261,6 +265,20 @@ const CodeEditor: React.FC = () => {
   }
 
   const currentProblem = selectedProblem || questions[0]
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && !hasSubmitted) {
+        handleSubmit();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [hasSubmitted, code, language, selectedProblem]);
 
   if (isLoadingQuestions) {
     return (
