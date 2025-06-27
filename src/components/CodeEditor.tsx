@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -15,6 +16,7 @@ import { Problem } from '@/types/Problem'
 import { getCodeTemplate } from '@/utils/codeTemplates'
 import { executeCode } from '@/utils/codeExecution'
 import { toast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 const CodeEditor: React.FC = () => {
   const { user } = useUser()
@@ -28,6 +30,7 @@ const CodeEditor: React.FC = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showAddQuestion, setShowAddQuestion] = useState(false)
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true)
 
   // Check if user is admin
   const isAdmin = user?.publicMetadata?.role === 'admin' || false
@@ -62,7 +65,56 @@ const CodeEditor: React.FC = () => {
     ]
   }
 
+  // Fetch questions from database
+  const fetchQuestions = async () => {
+    try {
+      setIsLoadingQuestions(true)
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching questions:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load questions from database. Using default question.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (data && data.length > 0) {
+        const formattedQuestions: Problem[] = data.map(q => ({
+          id: q.id,
+          title: q.title,
+          difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
+          timeLimit: q.time_limit,
+          memoryLimit: q.memory_limit,
+          description: q.description,
+          examples: q.examples as any[],
+          constraints: q.constraints
+        }))
+        setQuestions(formattedQuestions)
+        console.log(`Loaded ${formattedQuestions.length} questions from database`)
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error)
+      toast({
+        title: "Error",
+        description: "Failed to connect to database. Using default question.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingQuestions(false)
+    }
+  }
+
   const allProblems = [defaultProblem, ...questions]
+
+  useEffect(() => {
+    fetchQuestions()
+  }, [])
 
   useEffect(() => {
     if (allProblems.length > 0) {
@@ -125,12 +177,63 @@ const CodeEditor: React.FC = () => {
     setTestResults(null)
   }
 
-  const handleQuestionAdded = (newQuestion: Problem) => {
-    setQuestions(prev => [...prev, newQuestion])
+  const handleQuestionAdded = async (newQuestion: Problem) => {
+    try {
+      // Try to insert the question into the database
+      const { data, error } = await supabase
+        .from('questions')
+        .insert({
+          title: newQuestion.title,
+          difficulty: newQuestion.difficulty,
+          time_limit: newQuestion.timeLimit,
+          memory_limit: newQuestion.memoryLimit,
+          description: newQuestion.description,
+          examples: newQuestion.examples,
+          constraints: newQuestion.constraints,
+          created_by: user?.id || null
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error adding question to database:', error)
+        // If database insert fails, add to local state
+        setQuestions(prev => [...prev, newQuestion])
+        toast({
+          title: "Question Added Locally",
+          description: "Question added to current session. Note: Authentication required for permanent storage.",
+          variant: "default",
+        })
+      } else {
+        // If successful, refresh questions from database
+        await fetchQuestions()
+        toast({
+          title: "Success!",
+          description: "Question has been permanently added to the database.",
+        })
+      }
+    } catch (error) {
+      console.error('Error adding question:', error)
+      // Fallback to local state
+      setQuestions(prev => [...prev, newQuestion])
+      toast({
+        title: "Question Added Locally",
+        description: "Question added to current session only.",
+        variant: "default",
+      })
+    }
     setShowAddQuestion(false)
   }
 
   const currentProblem = selectedProblem || defaultProblem
+
+  if (isLoadingQuestions) {
+    return (
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg">Loading questions...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-screen bg-gray-50 p-4">
